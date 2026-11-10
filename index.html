@@ -5,8 +5,12 @@
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mute:#667085;--line:#e1e5ec;--accent:#1f5fae;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b212a;--ink:#e8ecf2;--mute:#9aa6b6;--line:#2c3541;--accent:#6aa5ee;color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-header{background:var(--card);border-bottom:1px solid var(--line);padding:.6rem 1rem;font-weight:700}
+html{font-size:100%}
+body{margin:0;font:1rem/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center}
+header .brand{font-weight:700;margin-right:auto}
+header .lang{display:flex;gap:.6rem}header .lang a{color:var(--accent);text-decoration:none;cursor:pointer}header .lang a.cur{font-weight:700;text-decoration:underline}
+header .fontsize{display:inline-flex;gap:.25rem}header button{background:transparent;color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:.2rem .55rem;min-height:2rem;font-weight:700;font-size:.9rem;cursor:pointer}header button:disabled{opacity:.4;cursor:default}
 main{max-width:720px;margin:0 auto;padding:1rem}
 h1{font-size:1.5rem;margin:.2rem 0 1rem}
 .muted{color:var(--mute)}
@@ -15,13 +19,27 @@ li{border-bottom:1px solid var(--line)} li:last-child{border-bottom:0}
 li a{display:flex;gap:1rem;justify-content:space-between;padding:.8rem 1rem;color:var(--accent);text-decoration:none}
 li a:hover{background:var(--bg)}
 li .d{color:var(--mute);white-space:nowrap}
-</style></head><body>
-<header>♠ Rezultati turnirjev</header>
+</style>
+<script>try{var z=+localStorage.getItem('fontsize');if(z>=70&&z<=200)document.documentElement.style.fontSize=z+'%'}catch(e){}</script></head><body>
+<header><span class="brand">♠ <span data-sl="Rezultati turnirjev" data-en="Tournament results">Rezultati turnirjev</span></span>
+<span class="lang"><a data-lang="sl" title="Slovenščina">SL</a><a data-lang="en" title="English">EN</a></span>
+<span class="fontsize"><button type="button" id="fsDown" data-sl="Manjša pisava" data-en="Smaller text">A&minus;</button><button type="button" id="fsUp" data-sl="Večja pisava" data-en="Larger text">A+</button></span></header>
 <main>
-<h1>Rezultati turnirjev <span class="muted">· Tournament results</span></h1>
-<ul id="list"><li><span class="muted" style="display:block;padding:.8rem 1rem">Nalagam … / Loading …</span></li></ul>
+<h1 data-sl="Rezultati turnirjev" data-en="Tournament results">Rezultati turnirjev</h1>
+<ul id="list"><li><span class="muted" style="display:block;padding:.8rem 1rem" data-sl="Nalagam …" data-en="Loading …">Nalagam …</span></li></ul>
 </main>
 <script>
+// Language (SL/EN) and text size, remembered in this browser; the tournament pages use the same settings.
+var lang='sl';try{if(localStorage.getItem('lang')==='en')lang='en'}catch(e){}
+function applyLang(){document.documentElement.lang=lang;document.title=lang==='en'?'Tournament results':'Rezultati turnirjev';
+  document.querySelectorAll('[data-sl]').forEach(function(el){var t=el.getAttribute('data-'+lang);if(el.tagName==='BUTTON'){el.title=t;el.setAttribute('aria-label',t)}else el.textContent=t});
+  document.querySelectorAll('header .lang a').forEach(function(a){a.className=a.dataset.lang===lang?'cur':''})}
+document.querySelectorAll('header .lang a').forEach(function(a){a.href='#';a.addEventListener('click',function(e){e.preventDefault();lang=a.dataset.lang;try{localStorage.setItem('lang',lang)}catch(x){}applyLang()})});
+(function(){var r=document.documentElement,steps=[85,100,115,130,150,175],d=document.getElementById('fsDown'),u=document.getElementById('fsUp');
+  function cur(){var z=parseFloat(r.style.fontSize)||100,i=0;steps.forEach(function(s,k){if(Math.abs(s-z)<Math.abs(steps[i]-z))i=k});return i}
+  function set(i){i=Math.max(0,Math.min(steps.length-1,i));var z=steps[i];r.style.fontSize=z===100?'':z+'%';try{if(z===100)localStorage.removeItem('fontsize');else localStorage.setItem('fontsize',z)}catch(e){}d.disabled=i===0;u.disabled=i===steps.length-1}
+  d.addEventListener('click',function(){set(cur()-1)});u.addEventListener('click',function(){set(cur()+1)});set(cur())})();
+applyLang();
 // Lists every tournament folder in this repository (named YYYY-MM-DD-name), newest first.
 // New folders show up here by themselves; nothing to edit after uploading a tournament.
 (function(){
@@ -29,10 +47,10 @@ li .d{color:var(--mute);white-space:nowrap}
   var m=location.hostname.match(/^([^.]+)\.github\.io$/), repo=location.pathname.split('/')[1]||'';
   var owner=m?m[1]:'strohsackj'; if(!m)repo='bridge-results';
   function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  function show(html){list.innerHTML=html}
+  function show(html){list.innerHTML=html;applyLang()}
   fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/').then(function(r){if(!r.ok)throw r;return r.json()}).then(function(items){
     var dirs=items.filter(function(i){return i.type==='dir'&&/^\d{4}-\d\d-\d\d/.test(i.name)}).map(function(i){return i.name}).sort().reverse();
-    if(!dirs.length){show('<li><span class="muted" style="display:block;padding:.8rem 1rem">Še ni objavljenih rezultatov. / No results yet.</span></li>');return}
+    if(!dirs.length){show('<li><span class="muted" style="display:block;padding:.8rem 1rem" data-sl="Še ni objavljenih rezultatov." data-en="No results yet."></span></li>');return}
     show(dirs.map(function(d){
       var p=d.slice(0,10).split('-'), date=+p[2]+'. '+(+p[1])+'. '+p[0];
       var name=d.slice(11).replace(/-/g,' ')||'Turnir'; name=name.charAt(0).toUpperCase()+name.slice(1);
@@ -41,7 +59,7 @@ li .d{color:var(--mute);white-space:nowrap}
     list.querySelectorAll('[data-dir]').forEach(function(el){
       fetch(encodeURIComponent(el.dataset.dir)+'/index.html').then(function(r){return r.ok?r.text():''}).then(function(t){
         var x=t.match(/<title>([^<]+)<\/title>/); if(x){var n=document.createElement('textarea');n.innerHTML=x[1];el.textContent=n.value.trim()}}).catch(function(){})});
-  }).catch(function(){show('<li><span class="muted" style="display:block;padding:.8rem 1rem">Seznama ni bilo mogoče naložiti. / Could not load the list.</span></li>')});
+  }).catch(function(){show('<li><span class="muted" style="display:block;padding:.8rem 1rem" data-sl="Seznama ni bilo mogoče naložiti." data-en="Could not load the list."></span></li>')});
 })();
 </script>
 </body></html>
